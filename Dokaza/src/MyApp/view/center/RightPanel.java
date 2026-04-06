@@ -1,4 +1,4 @@
-package MyApp.view.main;
+package MyApp.view.center;
 
 import java.awt.*;
 import javax.swing.*;

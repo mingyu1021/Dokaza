@@ -4,16 +4,14 @@ import java.awt.*;
 import javax.swing.*;
 
 import MyApp.view.top.TopPanel;
-import MyApp.view.main.MainPanel;
 import MyApp.view.bottom.BottomPanel;
+import MyApp.view.center.MainPanel;
 
 public class MainFrame extends JFrame {
     private TopPanel topPanel;
     private MainPanel mainPanel;
     private BottomPanel bottomPanel;
     
-    
-
     public MainFrame() {
         setTitle("Dokaza");
         setSize(1200, 900);
@@ -31,4 +29,10 @@ public class MainFrame extends JFrame {
 
         setVisible(true);
     }
+    
+    public TopPanel getTopPanel()    { return topPanel; }
+    
+    public MainPanel   getMainPanel()   { return mainPanel; }
+    
+    public BottomPanel getBottomPanel() { return bottomPanel; }
 }
