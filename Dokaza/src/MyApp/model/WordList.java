@@ -37,7 +37,19 @@ public class WordList {
         return this.words.size();
     }
     
+ // MyApp.model.WordList.java 내부에 추가/수정
+
     public void print() {
-    	
+        System.out.println("\n=== 📚 현재 단어장 목록 (총 " + words.size() + "개) ===");
+        
+        if (words.isEmpty()) {
+            System.out.println("저장된 단어가 없습니다.");
+        } else {
+            for (int i = 0; i < words.size(); i++) {
+                Word w = words.get(i);
+                System.out.println((i + 1) + ". " + w.getEnglish() + " : " + w.getKorean());
+            }
+        }
+        System.out.println("========================================\n");
     }
 }

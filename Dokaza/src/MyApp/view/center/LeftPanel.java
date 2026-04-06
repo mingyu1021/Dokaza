@@ -14,16 +14,17 @@ public class LeftPanel extends JPanel {
 		setBackground(Color.WHITE);
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
-      JLabel leftTitle = new JLabel("단어를 입력해주세요.");
+      JLabel leftTitle = new JLabel("PROMPT");
       leftTitle.setFont(new Font("맑은 고딕", Font.BOLD, 16));
       leftTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-      JLabel leftSub = new JLabel("--------------------------------------------");
+      JLabel leftSub = new JLabel("프롬프 입력 시 한글, 설명이 출력됩니다.");
       leftSub.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
       leftSub.setForeground(Color.GRAY);
       leftSub.setAlignmentX(Component.CENTER_ALIGNMENT);
       
       textArea = new JTextArea(); // 가로로 긴 1줄짜리 입력창
+      textArea.setFont(new Font("맑은 고딕", Font.PLAIN, 13));
       textArea.setMaximumSize(new Dimension(300, 35)); 
       textArea.setAlignmentX(Component.CENTER_ALIGNMENT);
       

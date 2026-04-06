@@ -4,6 +4,7 @@ import java.awt.*;
 import javax.swing.*;
 
 public class RightPanel extends JPanel {
+	JButton addWordButton;
 	
 	public RightPanel() {
       setBackground(Color.WHITE);
@@ -17,11 +18,17 @@ public class RightPanel extends JPanel {
       rightSub.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
       rightSub.setForeground(Color.GRAY);
       rightSub.setAlignmentX(Component.CENTER_ALIGNMENT);
+      
+      addWordButton = new JButton("단어 추가하기");
 
-      add(Box.createVerticalGlue());
+      add(Box.createVerticalStrut(20));
       add(rightTitle);
       add(Box.createVerticalStrut(8));
       add(rightSub);
-      add(Box.createVerticalGlue());
+      add(Box.createVerticalStrut(20));
+      add(addWordButton);
+      
 	}
+	
+	public JButton getAddWordButton() { return this.addWordButton; }
 }

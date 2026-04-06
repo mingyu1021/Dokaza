@@ -3,8 +3,14 @@ package MyApp.controller;
 import MyApp.model.AppModel;
 import MyApp.model.Word;
 import MyApp.view.MainFrame;
+import MyApp.view.dialog.AddWordDialog;
+
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+
+import javax.swing.JOptionPane;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 
 public class MainController {
@@ -19,16 +25,47 @@ public class MainController {
     }
 
     private void initController() {
-        // LeftPanel의 [추가] 버튼에 액션 리스너(클릭 감지기) 달기
-       view.getMainPanel().getLeftPanel().getTextArea().addKeyListener(new KeyAdapter() {
-    	   @Override
-           public void keyReleased(KeyEvent e) {
-               // 키보드에서 뗀 키가 쉼표(',')일 때만 아래 로직 실행
-               if (e.getKeyChar() == ',') {
-                   updateMiddlePanelRealTime();
-               }
-    	   }
-       });
+    	view.getMainPanel().getLeftPanel().getTextArea().getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) { updateMiddlePanelRealTime(); }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) { updateMiddlePanelRealTime(); }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) { updateMiddlePanelRealTime(); }
+            
+        });
+    	
+    	// MainController.java 내부의 initController() 중 일부
+    	view.getMainPanel().getRightPanel().getAddWordButton().addActionListener(e -> {
+    	    // 1. 새 다이얼로그 객체 생성 (view가 부모 창)
+    	    AddWordDialog dialog = new AddWordDialog(view);
+
+    	    // 2. 다이얼로그 내부의 [취소] 버튼 이벤트
+    	    dialog.getCancelButton().addActionListener(ev -> dialog.dispose());
+
+    	    // 3. 다이얼로그 내부의 [추가] 버튼 이벤트
+    	    dialog.getSaveButton().addActionListener(ev -> {
+    	        String eng = dialog.getEngText();
+    	        String kor = dialog.getKorText();
+    	        
+    	     // ★ 개선: 빈칸이면 경고창을 띄우고 창을 닫지 않음
+                if (eng.trim().isEmpty() || kor.trim().isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog, "영어와 한글 뜻을 모두 입력해주세요.", "입력 오류", JOptionPane.WARNING_MESSAGE);
+                    return; // 아래의 dispose()가 실행되지 않고 멈춤
+                }
+    	        
+    	        // model에 단어 추가하는 로직 실행
+    	        addNewWord(eng, kor);
+    	        
+    	        updateMiddlePanelRealTime(); // 메인 화면 갱신
+    	        dialog.dispose(); // 작업 완료 후 창 닫기
+    	    });
+
+    	    // 4. 화면에 띄우기 (이 코드가 실행되면 창이 닫힐 때까지 이 줄에서 대기합니다)
+    	    dialog.setVisible(true);
+    	});
     }
     // 쉼표가 찍힐 때마다 실행되는 로직
     private void updateMiddlePanelRealTime() {
@@ -56,7 +93,7 @@ public class MainController {
                 
                 // 단어장에 없는 단어일 경우의 처리 (원하시는 대로 수정 가능)
                 if (kor.isEmpty()) {
-                    kor = "?"; // 미등록 단어 표시
+                    kor ="?"; // 미등록 단어 표시
                 }
                 
                 koreanResult.append(kor);
@@ -87,5 +124,30 @@ public class MainController {
     private void addText() {
     	String text = view.getMainPanel().getLeftPanel().getText();
     	
+    }
+    
+ // 단어를 추가하고 화면과 콘솔을 갱신하는 전용 메서드
+    private void addNewWord(String english, String korean) {
+        // 1. 좌우 공백 제거
+        String eng = english.trim();
+        String kor = korean.trim();
+
+        // 2. 입력값이 비어있는지 확인 (간단한 유효성 검사)
+        if (eng.isEmpty() || kor.isEmpty()) {
+            System.out.println("❌ 오류: 영어와 한글 뜻을 모두 입력해야 합니다.");
+            return; 
+        }
+
+        // 3. 새로운 Word 객체 생성
+        Word newWord = new Word(eng, kor);
+
+        // 4. Model(WordList)에 단어 추가
+        model.getWordList().addWord(newWord);
+
+        // 5. 추가될 때마다 콘솔에 전체 리스트 출력 (요청하신 기능!)
+        model.getWordList().print();
+
+        // 6. 단어가 추가되었으니 MiddlePanel(번역된 결과 창)도 즉각 갱신
+        updateMiddlePanelRealTime();
     }
 }
