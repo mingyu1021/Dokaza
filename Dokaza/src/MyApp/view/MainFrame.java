@@ -13,7 +13,7 @@ public class MainFrame extends JFrame {
     private BottomPanel bottomPanel;
     
     public MainFrame() {
-        setTitle("Dokaza");
+        setTitle("Dokaza v0.1");
         setSize(1200, 900);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         

@@ -1,3 +1,5 @@
+
+
 package MyApp.controller;
 
 import MyApp.model.AppModel;
@@ -5,13 +7,15 @@ import MyApp.model.Word;
 import MyApp.view.MainFrame;
 import MyApp.view.dialog.AddWordDialog;
 
+import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
+import javax.swing.Box;
 import javax.swing.JOptionPane;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.table.DefaultTableModel;
 
 public class MainController {
     private MainFrame view;
@@ -19,135 +23,202 @@ public class MainController {
 
     public MainController(MainFrame view, AppModel model) {
         this.view = view;
-        this.model     = model;
-     // 컨트롤러가 생성될 때 바로 이벤트 리스너를 달아줍니다.
+        this.model = model;
         initController();
     }
 
     private void initController() {
-    	view.getMainPanel().getLeftPanel().getTextArea().getDocument().addDocumentListener(new DocumentListener() {
+        // ★ 수정: 글자가 바뀔 때마다 두 패널을 동시에 업데이트하는 메서드 호출
+        view.getMainPanel().getLeftPanel().getTextArea().getDocument().addDocumentListener(new DocumentListener() {
             @Override
-            public void insertUpdate(DocumentEvent e) { updateMiddlePanelRealTime(); }
+            public void insertUpdate(DocumentEvent e) { updateBothPanelsRealTime(); }
 
             @Override
-            public void removeUpdate(DocumentEvent e) { updateMiddlePanelRealTime(); }
+            public void removeUpdate(DocumentEvent e) { updateBothPanelsRealTime(); }
 
             @Override
-            public void changedUpdate(DocumentEvent e) { updateMiddlePanelRealTime(); }
-            
+            public void changedUpdate(DocumentEvent e) { updateBothPanelsRealTime(); }
         });
-    	
-    	// MainController.java 내부의 initController() 중 일부
-    	view.getMainPanel().getRightPanel().getAddWordButton().addActionListener(e -> {
-    	    // 1. 새 다이얼로그 객체 생성 (view가 부모 창)
-    	    AddWordDialog dialog = new AddWordDialog(view);
+        
+        view.getMainPanel().getRightPanel().getAddWordButton().addActionListener(e -> {
+            AddWordDialog dialog = new AddWordDialog(view);
+            dialog.getCancelButton().addActionListener(ev -> dialog.dispose());
 
-    	    // 2. 다이얼로그 내부의 [취소] 버튼 이벤트
-    	    dialog.getCancelButton().addActionListener(ev -> dialog.dispose());
-
-    	    // 3. 다이얼로그 내부의 [추가] 버튼 이벤트
-    	    dialog.getSaveButton().addActionListener(ev -> {
-    	        String eng = dialog.getEngText();
-    	        String kor = dialog.getKorText();
-    	        
-    	     // ★ 개선: 빈칸이면 경고창을 띄우고 창을 닫지 않음
+            dialog.getSaveButton().addActionListener(ev -> {
+                String eng = dialog.getEngText();
+                String kor = dialog.getKorText();
+                
                 if (eng.trim().isEmpty() || kor.trim().isEmpty()) {
                     JOptionPane.showMessageDialog(dialog, "영어와 한글 뜻을 모두 입력해주세요.", "입력 오류", JOptionPane.WARNING_MESSAGE);
-                    return; // 아래의 dispose()가 실행되지 않고 멈춤
+                    return; 
                 }
-    	        
-    	        // model에 단어 추가하는 로직 실행
-    	        addNewWord(eng, kor);
-    	        
-    	        updateMiddlePanelRealTime(); // 메인 화면 갱신
-    	        dialog.dispose(); // 작업 완료 후 창 닫기
-    	    });
+                
+                addNewWord(eng, kor);
+                dialog.dispose(); 
+            });
 
-    	    // 4. 화면에 띄우기 (이 코드가 실행되면 창이 닫힐 때까지 이 줄에서 대기합니다)
-    	    dialog.setVisible(true);
-    	});
+            dialog.setSize(400, 300); // 1. 강제로 넉넉한 크기를 지정해 줍니다.
+            dialog.setLocationRelativeTo(view); // 2. 창이 무조건 메인 화면 정중앙에 뜨게 만듭니다.
+            dialog.setAlwaysOnTop(true); // 3. 실수로 뒤로 숨지 않게 최상단 위로 끌어올립니다.
+            
+            dialog.setVisible(true);
+        });
     }
-    // 쉼표가 찍힐 때마다 실행되는 로직
+
+    // ★ 추가: Middle과 Right 패널을 한 번에 갱신하는 묶음 메서드
+    private void updateBothPanelsRealTime() {
+        updateMiddlePanelRealTime();
+        updateRightPanelRealTime();
+    }
+
+    // (기존 코드와 동일) 쉼표로 이어진 텍스트를 출력하는 메서드
     private void updateMiddlePanelRealTime() {
-    	// 1. 왼쪽 창 텍스트 가져오기
         String inputText = view.getMainPanel().getLeftPanel().getText();
         
-        // 다 지웠을 때는 가운데 창도 같이 비워주기
         if (inputText == null || inputText.trim().isEmpty()) {
             view.getMainPanel().getMiddlePanel().setText("");
             return;
         }
 
-        // 2. 쉼표 기준으로 쪼개기
         String[] words = inputText.split(",");
-        
-        // 3. 쉼표로 연결할 새로운 문자열을 만들기 위한 StringBuilder
         StringBuilder koreanResult = new StringBuilder(); 
 
         for (int i = 0; i < words.length; i++) {
             String eng = words[i].trim();
-            
             if (!eng.isEmpty()) {
-                // WordList에서 한글 뜻 찾기
                 String kor = findKoreanMeaning(eng);
-                
-                // 단어장에 없는 단어일 경우의 처리 (원하시는 대로 수정 가능)
-                if (kor.isEmpty()) {
-                    kor ="?"; // 미등록 단어 표시
-                }
-                
+                if (kor.isEmpty()) kor = "?"; 
                 koreanResult.append(kor);
             }
-            
-            // 마지막 단어가 아니라면 뒤에 쉼표와 공백(", ") 붙여주기
-            // (사용자가 hello 뒤에 쉼표를 찍은 상태면, 배열의 마지막이라도 쉼표를 붙임)
             if (i < words.length - 1 || inputText.endsWith(",")) {
                 koreanResult.append(", ");
             }
         }
-
-        // 4. 완성된 "안녕, 에이비씨, 디이에프" 문자열을 MiddlePanel에 한 번에 출력!
         view.getMainPanel().getMiddlePanel().setText(koreanResult.toString());
     }
+
+    // ★ 핵심 로직: 입력된 텍스트를 기반으로 RightPanel에 객체(블록)를 생성하는 메서드
+//    private void updateRightPanelRealTime() {
+//        // RightPanel의 컨테이너 가져오기 및 초기화
+//        javax.swing.JPanel wordListPanel = view.getMainPanel().getRightPanel().getWordListPanel();
+//        wordListPanel.removeAll(); 
+//
+//        // 왼쪽 창 텍스트 가져오기
+//        String inputText = view.getMainPanel().getLeftPanel().getText();
+//        
+//        if (inputText != null && !inputText.trim().isEmpty()) {
+//            // 쉼표 기준으로 쪼개기
+//            String[] words = inputText.split(",");
+//
+//            for (String w : words) {
+//                String eng = w.trim();
+//                
+//                if (!eng.isEmpty()) {
+//                    String kor = findKoreanMeaning(eng);
+//                    if (kor.isEmpty()) kor = "?"; 
+//
+//                    // --- UI 객체(블록) 생성 ---
+//                    javax.swing.JPanel wordBlock = new javax.swing.JPanel();
+//                    wordBlock.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
+//                    wordBlock.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+//                        javax.swing.BorderFactory.createLineBorder(java.awt.Color.LIGHT_GRAY),
+//                        javax.swing.BorderFactory.createEmptyBorder(5, 10, 5, 10)
+//                    ));
+//                    
+//                    String displayText = eng + " - " + kor;
+//                    javax.swing.JLabel wordLabel = new javax.swing.JLabel(displayText);
+//                    wordBlock.add(wordLabel);
+//                    
+//                    // 패널에 블록 추가
+//                    wordListPanel.add(wordBlock);
+//                }
+//            }
+//        }
+//        
+//        // 화면 강제 새로고침
+//        wordListPanel.revalidate();
+//        wordListPanel.repaint();
+//    }
     
-    private String findKoreanMeaning(String englishWord) {
-    	// model의 WordList에 들어있는 모든 단어를 하나씩 꺼내서 검사
-        for (Word word : model.getWordList().getWords()) {
-            // 대소문자 무시하고 영어 단어가 일치하면
-            if (word.getEnglish().equalsIgnoreCase(englishWord)) {
-                return word.getKorean(); // 그 단어의 한글 뜻을 반환!
+    private void updateRightPanelRealTime() {
+        // RightPanel의 컨테이너 가져오기 및 초기화
+        javax.swing.JPanel wordListPanel = view.getMainPanel().getRightPanel().getWordListPanel();
+        wordListPanel.removeAll(); 
+
+        // 왼쪽 창 텍스트 가져오기
+        String inputText = view.getMainPanel().getLeftPanel().getText();
+        
+        if (inputText != null && !inputText.trim().isEmpty()) {
+            // 쉼표 기준으로 쪼개기
+            String[] words = inputText.split(",");
+
+            for (String w : words) {
+                String eng = w.trim();
+                
+                if (!eng.isEmpty()) {
+                    String kor = findKoreanMeaning(eng);
+                    if (kor.isEmpty()) kor = "?"; 
+
+                    // --- UI 객체(블록) 생성 ---
+                    javax.swing.JPanel wordBlock = new javax.swing.JPanel();
+                    
+                    // 글자가 위아래 중앙에 오도록 FlowLayout 여백 조정
+                    wordBlock.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 8)); 
+                    
+                    // ★ 1. 크기 고정: 가로는 꽉 채우고(300), 세로 높이는 40으로 고정합니다.
+                    Dimension blockDim = new Dimension(300, 40);
+                    wordBlock.setPreferredSize(blockDim);
+                    wordBlock.setMaximumSize(blockDim); // BoxLayout이 못 늘리게 막는 핵심!
+                    wordBlock.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    
+                    wordBlock.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+                        javax.swing.BorderFactory.createLineBorder(java.awt.Color.LIGHT_GRAY),
+                        javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0)
+                    ));
+                    
+                    String displayText = eng + " - " + kor;
+                    javax.swing.JLabel wordLabel = new javax.swing.JLabel(displayText);
+                    wordBlock.add(wordLabel);
+                    
+                    // 패널에 블록 추가
+                    wordListPanel.add(wordBlock);
+                }
             }
         }
-        return ""; // 다 뒤졌는데 없으면 빈칸 반환
+        
+        // ★ 2. 빈 공간 밀어내기: 블록이 다 추가된 후, 남는 아래 공간을 꽉 채우는 투명 스프링을 넣습니다.
+        // 이 녀석이 들어가면 위의 블록들이 더 이상 늘어나지 않고 맨 위로 착 달라붙습니다.
+        wordListPanel.add(Box.createVerticalGlue());
+        
+        // 화면 강제 새로고침
+        wordListPanel.revalidate();
+        wordListPanel.repaint();
     }
     
-    private void addText() {
-    	String text = view.getMainPanel().getLeftPanel().getText();
-    	
+    // (기존 코드와 동일) 단어 검색
+    private String findKoreanMeaning(String englishWord) {
+        for (Word word : model.getWordList().getWords()) {
+            if (word.getEnglish().equalsIgnoreCase(englishWord)) {
+                return word.getKorean(); 
+            }
+        }
+        return ""; 
     }
     
- // 단어를 추가하고 화면과 콘솔을 갱신하는 전용 메서드
+    // 단어 추가 후 화면 갱신
     private void addNewWord(String english, String korean) {
-        // 1. 좌우 공백 제거
         String eng = english.trim();
         String kor = korean.trim();
 
-        // 2. 입력값이 비어있는지 확인 (간단한 유효성 검사)
         if (eng.isEmpty() || kor.isEmpty()) {
             System.out.println("❌ 오류: 영어와 한글 뜻을 모두 입력해야 합니다.");
             return; 
         }
 
-        // 3. 새로운 Word 객체 생성
-        Word newWord = new Word(eng, kor);
-
-        // 4. Model(WordList)에 단어 추가
-        model.getWordList().addWord(newWord);
-
-        // 5. 추가될 때마다 콘솔에 전체 리스트 출력 (요청하신 기능!)
+        model.getWordList().addWord(new Word(eng, kor));
         model.getWordList().print();
 
-        // 6. 단어가 추가되었으니 MiddlePanel(번역된 결과 창)도 즉각 갱신
-        updateMiddlePanelRealTime();
+        // ★ 단어가 추가되면 입력 중이던 "?" 표시가 즉시 실제 뜻으로 바뀌도록 두 화면 모두 갱신
+        updateBothPanelsRealTime();
     }
 }

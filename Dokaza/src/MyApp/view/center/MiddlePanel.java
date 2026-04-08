@@ -11,7 +11,7 @@ public class MiddlePanel extends JPanel {
       setBackground(new Color(240, 240, 240));
       setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
      
-      setBorder(BorderFactory.createEmptyBorder(20, 5, 20, 5));
+ 
 
       JLabel centerTitle = new JLabel("📋 메인 콘텐츠");
       centerTitle.setFont(new Font("맑은 고딕", Font.BOLD, 16));
@@ -32,15 +32,19 @@ public class MiddlePanel extends JPanel {
    // ★ 중요: 가운데 창은 출력 전용이므로 수정 불가 처리
       textArea.setEditable(false); 
       textArea.setBackground(new Color(245, 245, 245)); // 살짝 회색 배경으로 읽기 전용 느낌 주기
-      textArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+      textArea.setBorder(BorderFactory.createCompoundBorder(
+              BorderFactory.createLineBorder(Color.GRAY),
+              BorderFactory.createEmptyBorder(5, 5, 5, 5) 
+          ));
 
       JScrollPane scrollPane = new JScrollPane(textArea);
       scrollPane.setAlignmentX(Component.CENTER_ALIGNMENT);
       scrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
       
       // 크기는 프로젝트 화면 사이즈에 맞게 조절하세요
-      Dimension panelSize = new Dimension(250, 400);
+      Dimension panelSize = new Dimension(300, 600);
       scrollPane.setPreferredSize(panelSize);
+      scrollPane.setMaximumSize(panelSize);
       
       add(Box.createVerticalStrut(20));
       add(centerTitle);
